@@ -132,42 +132,46 @@ python3 -m http.server 8080
 
 ## 6. 怎么 push 到远程 / How to push
 
-> SSH 到 GitHub 在本环境被墙了，`gh` CLI 也没装，所以走 **HTTPS + Personal Access Token (PAT)**。
+> ✅ **本机已配置好 SSH（一次性），现在 push 不再需要任何 token。**
+> 这台机器的 SSH 公钥已加到 GitHub 账号 `chongqichuizi875`，
+> 且因为本环境端口 22 被墙，已在 `~/.ssh/config` 把 `github.com` 走 `ssh.github.com:443`。
+> remote 也已切成 SSH（`git@github.com:…`）。所以下面三行就够了。
 
-### 6.1 先准备一个 token（每次 push 都要，用完即焚）
-1. GitHub → 头像 → **Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token (classic)**
-2. 勾选 **`repo`** 这一个 scope 就够（推送 + 触发 Pages 重建）。
-3. 有效期选短一点（比如 7 天）。
-4. 生成后复制（`ghp_…` 开头）。
-
-### 6.2 提交并推送（把下面的 `<USER>` `<TOKEN>` 换成真实值）
+### 6.1 提交并推送（日常就用这个）
 
 ```bash
 cd /apdcephfs_cq8/share_1611098/sumailmao/hunyuan_projects/Angel-RL/cppo-project-page
 
-# 1) 提交本地改动
 git add -A
 git -c user.name=sumailmao -c user.email=sumailmao@tencent.com \
     commit -m "在此写本次改动说明，例如：Add Code link / 更新结果表"
-
-# 2) 用 token 推送（token 只在这一行内联使用，不写进 git config）
-USER=chongqichuizi875
-TOKEN=ghp_你的token
-git -c http.extraHeader="Authorization: Basic $(printf '%s:%s' "$USER" "$TOKEN" | base64 | tr -d '\n')" \
-    push origin main
-
-# 3) 用完即焚：确认 remote 里没有 token（应只显示干净的 https URL）
-git remote -v
+git push origin main
 ```
 
-### 6.3 确认上线
+就这样，没有 token、不会过期、不用复制粘贴。
+
+### 6.2 确认上线
 - GitHub Pages 会在 ~30–60 秒内自动重建。
 - 打开（最好用无痕窗口 / 强制刷新 Cmd+Shift+R）：
   **https://chongqichuizi875.github.io/CPPO-Project-Page/**
+- 想确认远端已收到：`git status -sb`（应显示 `## main...origin/main`，没有 `ahead`）。
 
-### 6.4 安全提醒
-- **每次 push 完，去 GitHub 把这个 token 撤销**（Settings → Developer settings → 删掉它）。下次再生成新的。
-- 永远不要把 token 写进任何文件或 `git config`。
+### 6.3 如果 push 报错怎么办 / Troubleshooting push
+
+| 报错 | 原因 / 解决 |
+|---|---|
+| `Permission denied (publickey)` | GitHub 不认这台机器的 key。重新把 `~/.ssh/id_rsa.pub` 加到 GitHub → Settings → SSH and GPG keys。 |
+| `Connection timed out` / 卡住 | 端口 22 被墙。确认 `~/.ssh/config` 里 `github.com` 的 `HostName ssh.github.com` + `Port 443`（见下方"环境备注"）。 |
+| `could not read Username for https://github.com` | remote 还是 HTTPS。执行 `git remote set-url origin git@github.com:chongqichuizi875/CPPO-Project-Page.git` 改回 SSH。 |
+
+**环境备注**：本机 `~/.ssh/config` 里应有这段（已配好，仅供排查时核对）：
+```
+Host github.com
+    HostName ssh.github.com
+    Port 443
+    User git
+```
+> ⚠️ 这是**共享 CephFS 路径**，能读到本机 `~/.ssh/id_rsa` 的人都能以你的身份 push 到这个仓库。仅用于公开 project page 没问题；若要收回权限，去 GitHub → Settings → SSH and GPG keys 删掉对应 key 即可。
 
 ---
 
@@ -175,15 +179,15 @@ git remote -v
 
 你说的工作流是：**下次在相同路径开新窗口 → 让 AI 读这份文档 → 说"帮我 xxx" → push**。给 AI 的话可以是：
 
-> 读一下 `cppo-project-page/DOCUMENTATION.md`。然后帮我 [把 Code 按钮换成 https://github.com/xxx 的链接 / 更新结果表里 XX 的数字 / 改一句中文文案……]。改完本地验证一下，没问题我给你 token 你来 push。
+> 读一下 `cppo-project-page/DOCUMENTATION.md`。然后帮我 [把 Code 按钮换成 https://github.com/xxx 的链接 / 更新结果表里 XX 的数字 / 改一句中文文案……]。改完本地验证一下，没问题就直接 push。
 
 AI 应当：
 1. 读本文档了解结构和规则（尤其第 3 节双语规则、第 5 节改法）。
 2. 做改动，保证 `.en/.zh` 成对、公式不被破坏、masthead 不抖动。
 3. 本地用 headless 浏览器或 `python3 -m http.server` 预览确认。
-4. 等你提供 token 后，按第 6.2 节 push，然后**立即清除 token**，并回报 Live URL。
+4. 直接按第 6.1 节 `git push origin main`（**已配好 SSH，无需 token**），然后回报 Live URL。
 
-> 给 AI 的硬性提醒：① 所有东西都在 `cppo-project-page/` 这个独立 git 仓库里，不要碰外层 `Angel-RL`（内部仓库）。② push 必须用 HTTPS+PAT 内联方式，**不要**把 token 写进 git config 或任何文件。③ 数学公式里如果要写 `<`，必须用 KaTeX 的 `\lt`，否则会被 HTML 解析器吃掉（这个坑踩过）。
+> 给 AI 的硬性提醒：① 所有东西都在 `cppo-project-page/` 这个独立 git 仓库里，不要碰外层 `Angel-RL`（内部仓库）。② push 走已配置好的 SSH-over-443，**不需要也不要**再用 token / HTTPS。③ 数学公式里如果要写 `<`，必须用 KaTeX 的 `\lt`，否则会被 HTML 解析器吃掉（这个坑踩过）。
 
 ---
 
@@ -206,8 +210,9 @@ AI 应当：
 |---|---|
 | 改了没生效 | 浏览器缓存。强制刷新 **Cmd/Ctrl + Shift + R**。 |
 | Pages 没更新 | 等 1 分钟；或去仓库 **Actions / Settings → Pages** 看构建状态。 |
-| push 报 403 | token 过期或 scope 不对，重新生成一个 `repo` scope 的 classic token。 |
-| push 报 “Authentication failed” | 用户名或 token 错；确认是 `chongqichuizi875` + 新 token。 |
+| push 报 `Permission denied (publickey)` | GitHub 不认本机 key。把 `~/.ssh/id_rsa.pub` 重新加到 GitHub → Settings → SSH and GPG keys。 |
+| push `Connection timed out` / 卡住 | 端口 22 被墙。核对 `~/.ssh/config` 里 `github.com` → `HostName ssh.github.com` + `Port 443`（见第 6.3 节）。 |
+| push 报 `could not read Username for https://github.com` | remote 退回了 HTTPS。执行 `git remote set-url origin git@github.com:chongqichuizi875/CPPO-Project-Page.git`。 |
 | 切换语言页面抖动 | 别在 masthead 纯英文元素上挂随语言变化的样式（见第 3 节第 6 条）。 |
 | 公式显示成乱码/被截断 | 数学里别用裸 `<`/`>`，用 `\lt`/`\gt`；`$…$` 行内、`$$…$$` 独行。 |
 | `.en`/`.zh` 数量不一致 | 漏写了一种语言的 span；检查成对。 |
