@@ -4,11 +4,26 @@
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+    initLang();
     buildTokenStrip();
     initReveal();
     initTabs();
     initSmoothScroll();
 });
+
+/* ---- Language toggle (default already set in <head>; persists choice) ---- */
+function initLang() {
+    const btns = document.querySelectorAll('.lang-btn');
+    const apply = (lang) => {
+        document.documentElement.setAttribute('data-lang', lang);
+        document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+        btns.forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+        try { localStorage.setItem('cppo-lang', lang); } catch (e) {}
+    };
+    // reflect the current (head-resolved) language on the buttons
+    apply(document.documentElement.getAttribute('data-lang') || 'en');
+    btns.forEach(b => b.addEventListener('click', () => apply(b.dataset.lang)));
+}
 
 /* ---- Signature motif: render w_t = 1 - (1-wmin)/(T-1)(t-1) as a height/opacity ramp ---- */
 function buildTokenStrip() {

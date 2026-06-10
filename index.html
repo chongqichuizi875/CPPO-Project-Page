@@ -3,13 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- language: persisted choice, else China locale/timezone -> zh, otherwise en -->
+    <script>
+    (function(){
+        try {
+            var saved = localStorage.getItem('cppo-lang');
+            var lang = saved;
+            if (!lang) {
+                var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').toLowerCase();
+                var cn = ['asia/shanghai','asia/chongqing','asia/urumqi','asia/harbin','asia/macau','asia/hong_kong'];
+                var nav = (navigator.language || '').toLowerCase();
+                lang = (cn.indexOf(tz) >= 0 || nav.indexOf('zh-cn') === 0 || nav === 'zh') ? 'zh' : 'en';
+            }
+            document.documentElement.setAttribute('data-lang', lang);
+        } catch (e) { document.documentElement.setAttribute('data-lang', 'en'); }
+    })();
+    </script>
     <title>CPPO — Beyond Uniform Token-Level Trust Region in LLM Reinforcement Learning</title>
     <meta name="description" content="CPPO (Cumulative Prefix-divergence Policy Optimization) replaces uniform token-level trust regions with a position-weighted threshold and a cumulative prefix budget, aligning RLVR updates with the autoregressive structure of LLMs for more stable training and higher reasoning accuracy.">
 
-    <!-- Fonts: Fraunces (display) · Spectral (body) · IBM Plex Mono (technical) -->
+    <!-- Fonts: Fraunces (display) · Spectral (body) · IBM Plex Mono (technical) · Noto Serif SC (Chinese) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- KaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -26,15 +42,15 @@
 <header class="masthead">
     <div class="wrap">
         <div class="masthead-top anim d1">
-            <span>Tencent&nbsp;Hunyuan</span>
+            <span class="brand"><img src="assets/hunyuan-logo.png" alt="Tencent Hunyuan"></span>
             <span class="rule"></span>
             <span>RLVR · Trust Region</span>
             <span class="rule"></span>
             <span>arXiv 2606.10968</span>
         </div>
 
-        <h1 class="wordmark anim d2">CPPO<span class="dot">.</span></h1>
-        <p class="lede anim d3">Beyond Uniform Token-Level Trust Region in LLM Reinforcement Learning</p>
+        <h1 class="wordmark anim d2">CPPO</h1>
+        <p class="lede anim d3">Beyond Uniform Token-Level Trust Region<br>in LLM Reinforcement Learning</p>
 
         <div class="byline anim d4">
             <div class="author-row">
@@ -52,14 +68,26 @@
                 <span class="author">Wenxi Zhu<sup>&dagger;</sup></span>
             </div>
             <p class="affil">Tencent Hunyuan</p>
-            <p class="notes"><sup>*</sup> Equal contribution &nbsp;·&nbsp; <sup>&dagger;</sup> Corresponding author</p>
+            <p class="notes"><span class="en"><sup>*</sup> Equal contribution &nbsp;·&nbsp; <sup>&dagger;</sup> Corresponding author</span><span class="zh"><sup>*</sup> 共同一作 &nbsp;·&nbsp; <sup>&dagger;</sup> 通讯作者</span></p>
         </div>
 
         <nav class="actions anim d5">
-            <a href="cppo.pdf" class="act primary" target="_blank" rel="noopener">&#9633;&nbsp; Paper</a>
+            <a href="cppo.pdf" class="act primary" target="_blank" rel="noopener">
+                <svg class="ico" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+                    <path fill="currentColor" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V8a1 1 0 0 0 1 1h4.5L13 3.5Z"/>
+                    <text x="11.6" y="17.4" text-anchor="middle" font-family="Arial, sans-serif" font-size="6.4" font-weight="700" fill="var(--ink)">PDF</text>
+                </svg>
+                Paper
+            </a>
             <a href="https://arxiv.org/abs/2606.10968" class="act ghost" target="_blank" rel="noopener">&#8599;&nbsp; arXiv</a>
             <span class="act dim" aria-disabled="true" title="Code release coming soon">&lt;/&gt;&nbsp; Code <span class="soon">soon</span></span>
         </nav>
+
+        <!-- language toggle -->
+        <div class="langtoggle anim d5" role="group" aria-label="Language">
+            <button class="lang-btn" data-lang="en">English</button>
+            <button class="lang-btn" data-lang="zh">简体中文</button>
+        </div>
 
         <!-- Signature motif: the position-weight schedule w_t, decaying early→late -->
         <div class="tokenstrip anim d6" aria-hidden="true">
@@ -83,12 +111,22 @@
         </div>
         <div class="tldr">
             <p class="tldr-lead reveal">
-                PPO/GRPO-style trust regions treat every token the same. But in autoregressive generation, <strong>early tokens matter more</strong> and <strong>drift accumulates along the prefix</strong>. CPPO reallocates the divergence budget accordingly — a drop-in token mask, no new loss term.
+                <span class="en">PPO/GRPO-style trust regions treat every token the same. But in autoregressive generation, <strong>early tokens matter more</strong> and <strong>drift accumulates along the prefix</strong>. CPPO reallocates the divergence budget accordingly — a drop-in token mask, no new loss term.</span>
+                <span class="zh">PPO/GRPO 一类信任域对所有 token 施加同一阈值。然而在自回归生成中，<strong>靠前的 token 影响更大</strong>，且<strong>偏移会沿 prefix 逐步累积</strong>。CPPO 依据这两点重新分配散度预算，其形式是一个即插即用的 token mask，不引入任何新的 loss 项。</span>
             </p>
             <ul class="tldr-points reveal">
-                <li><strong>Problem.</strong> A uniform threshold $D_t \le \delta$ is loose on high-impact early tokens and over-tight on late ones, with no memory of how far the prefix has already drifted.</li>
-                <li><strong>Fix.</strong> A position weight $w_t$ tightens early positions; a cumulative prefix budget $\delta_b$ caps the weighted prefix average. Together they give a provably tighter improvement bound.</li>
-                <li><strong>Result.</strong> Best AIME24/25/26 Avg@16 on all four Qwen3 settings; <strong>+5.56</strong> over the best baseline on 30B-A3B-Base, and stable where others collapse.</li>
+                <li>
+                    <span class="en"><strong>Problem.</strong> A uniform threshold $D_t \le \delta$ is loose on high-impact early tokens and over-tight on late ones, with no memory of how far the prefix has already drifted.</span>
+                    <span class="zh"><strong>问题。</strong> 统一阈值 $D_t \le \delta$ 在所有位置取同一值，对影响最大的靠前 token 约束过松、对靠后 token 约束过紧，且不计入 prefix 此前已累积的偏移。</span>
+                </li>
+                <li>
+                    <span class="en"><strong>Fix.</strong> A position weight $w_t$ tightens early positions; a cumulative prefix budget $\delta_b$ caps the weighted prefix average. Together they give a provably tighter improvement bound.</span>
+                    <span class="zh"><strong>方法。</strong> 以位置权重 $w_t$ 收紧靠前位置，并以累积 prefix 预算 $\delta_b$ 约束整段 prefix 的加权平均散度。二者共同给出可证明更紧的 policy-improvement bound。</span>
+                </li>
+                <li>
+                    <span class="en"><strong>Result.</strong> Best AIME24/25/26 Avg@16 on all four Qwen3 settings; <strong>+5.56</strong> over the best baseline on 30B-A3B-Base, and stable where others collapse.</span>
+                    <span class="zh"><strong>结果。</strong> 在四个 Qwen3 设置上的验证集 AIME24/25/26 Avg@16 均取得最优；在 30B-A3B-Base 上较最强 baseline 提升 <strong>+5.56</strong>，并在其余方法发生训练崩溃之处仍保持稳定。</span>
+                </li>
             </ul>
         </div>
     </div>
@@ -105,9 +143,9 @@
 
         <div class="reveal">
             <div class="tabs" role="tablist">
-                <button class="tab active" data-tab="t-main">Main Results</button>
-                <button class="tab" data-tab="t-curves">Validation Curves</button>
-                <button class="tab" data-tab="t-abl">Ablations</button>
+                <button class="tab active" data-tab="t-main"><span class="en">Main Results</span><span class="zh">主结果</span></button>
+                <button class="tab" data-tab="t-curves"><span class="en">Validation Curves</span><span class="zh">验证曲线</span></button>
+                <button class="tab" data-tab="t-abl"><span class="en">Ablations</span><span class="zh">消融</span></button>
             </div>
 
             <!-- Main -->
@@ -128,10 +166,16 @@
                         </tbody>
                     </table>
                 </div>
-                <p class="tab-desc" style="margin-top:1rem;margin-bottom:0;">Best validation AIME24/25/26 Avg@16 (%) within the matched window $[0,T^{\text{stop}}]$. All divergence masks share the same Top-K reduced-TV score and per-model threshold scale, so the comparison isolates the trust-region rule. <strong>Bold</strong> = best, <span class="under">underline</span> = second.</p>
+                <p class="tab-desc" style="margin-top:1rem;margin-bottom:0;">
+                    <span class="en">Best validation AIME24/25/26 Avg@16 (%) within the matched window $[0,T^{\text{stop}}]$. All divergence masks share the same Top-K reduced-TV score and per-model threshold scale, so the comparison isolates the trust-region rule. <strong>Bold</strong> = best, <span class="under">underline</span> = second.</span>
+                    <span class="zh">在统一的训练窗口 $[0,T^{\text{stop}}]$ 内、于验证集上取得的最佳 AIME24/25/26 Avg@16（%）。所有 divergence mask 均采用同一套 Top-K reduced-TV 分数与按模型设定的阈值尺度，因此该比较所隔离的是 trust-region 规则本身，而非散度度量的差异。<strong>加粗</strong>为最优，<span class="under">下划线</span>为次优。</span>
+                </p>
                 <div class="bignum">
                     <span class="n">+5.56</span>
-                    <span class="t">over the best baseline on 30B-A3B-Base — the longest-horizon (16k) setting, where remaining-horizon amplification is strongest. Over the matched DPPO baseline: <strong>+3.69 / +1.88 / +2.22 / +5.56</strong> across the four models.</span>
+                    <span class="t">
+                        <span class="en">over the best baseline on 30B-A3B-Base — the longest-horizon (16k) setting, where remaining-horizon amplification is strongest. Over the matched DPPO baseline: <strong>+3.69 / +1.88 / +2.22 / +5.56</strong> across the four models.</span>
+                        <span class="zh">此为 30B-A3B-Base 上相对最强 baseline 的提升；该设置序列最长（16k），剩余长度带来的误差放大最为显著。相对同条件的 DPPO，四个模型依次为 <strong>+3.69 / +1.88 / +2.22 / +5.56</strong>，提升幅度随序列长度增大。</span>
+                    </span>
                 </div>
             </div>
 
@@ -139,7 +183,10 @@
             <div class="panel-tab" id="t-curves">
                 <figure class="plate result-fig">
                     <img src="assets/figs/fig4_validation_curves.png" alt="Validation AIME24/25/26 Avg@16 curves for the three Base-model runs.">
-                    <figcaption class="figcap"><span class="lab">Figure 2 —</span> Validation curves on Qwen3-1.7B-Base, 8B-Base and 30B-A3B-Base. CPPO holds a consistent lead; its separation from DPPO <b>widens over training</b> as the prefix constraint engages. CISPO collapses and TRM-Max degrades to 20.27, while CPPO stays stable.</figcaption>
+                    <figcaption class="figcap"><span class="lab">Figure 2 —</span>
+                        <span class="en"> Validation curves on Qwen3-1.7B-Base, 8B-Base and 30B-A3B-Base. CPPO holds a consistent lead; its separation from DPPO <b>widens over training</b> as the prefix constraint engages. CISPO collapses and TRM-Max degrades to 20.27, while CPPO stays stable.</span>
+                        <span class="zh"> Qwen3-1.7B-Base、8B-Base、30B-A3B-Base 上的验证曲线。CPPO 全程保持领先；随着 prefix 约束逐步生效，其相对 DPPO 的优势在训练中持续扩大。同设置下 CISPO 发生训练崩溃、TRM-Max 退化至 20.27，而 CPPO 始终稳定。</span>
+                    </figcaption>
                 </figure>
             </div>
 
@@ -147,11 +194,17 @@
             <div class="panel-tab" id="t-abl">
                 <figure class="plate result-fig">
                     <img src="assets/figs/fig5_ablations.png" alt="Ablations on Qwen3-1.7B: single-mechanism, position-weight ordering, hard mask vs soft gate.">
-                    <figcaption class="figcap"><span class="lab">Figure 3 —</span> Qwen3-1.7B. Each mechanism beats DPPO alone and the full mask is best (left); the ordered schedule beats shuffled weights (middle); the soft-gate variant tracks the hard mask (right).</figcaption>
+                    <figcaption class="figcap"><span class="lab">Figure 3 —</span>
+                        <span class="en"> Qwen3-1.7B. Each mechanism beats DPPO alone and the full mask is best (left); the ordered schedule beats shuffled weights (middle); the soft-gate variant tracks the hard mask (right).</span>
+                        <span class="zh"> Qwen3-1.7B。位置权重与 prefix 预算单独使用时均已超过 DPPO，二者结合的完整 mask 表现最佳（左）；按位置由前及后递减的权重明显优于随机打乱的权重（中），表明起作用的是位置顺序而非阈值数值本身；soft-gate 变体与 hard mask 基本持平（右）。</span>
+                    </figcaption>
                 </figure>
                 <figure class="plate result-fig">
                     <img src="assets/figs/fig6_base_ablations.png" alt="Qwen3-1.7B-Base ablations: hyperparameter sensitivity, KL vs TV, Binary vs Top-K.">
-                    <figcaption class="figcap"><span class="lab">Figure 4 —</span> Qwen3-1.7B-Base. Robust to $(\delta_b, w_{\min})$ (left) and to the divergence choice — KL matches TV, Binary matches Top-K (middle, right). The gain comes from enforcing thresholds as a <b>prefix budget</b>, not from the estimator.</figcaption>
+                    <figcaption class="figcap"><span class="lab">Figure 4 —</span>
+                        <span class="en"> Qwen3-1.7B-Base. Robust to $(\delta_b, w_{\min})$ (left) and to the divergence choice — KL matches TV, Binary matches Top-K (middle, right). The gain comes from enforcing thresholds as a <b>prefix budget</b>, not from the estimator.</span>
+                        <span class="zh"> Qwen3-1.7B-Base。结果对超参 $(\delta_b, w_{\min})$ 不敏感（左），对散度度量的选择亦然——KL 与 TV 相当、Binary 与 Top-K 相当（中、右）。这表明增益源于将阈值以 <b>prefix 预算</b>的形式施加，而非源于散度估计器的选择。</span>
+                    </figcaption>
                 </figure>
             </div>
         </div>
@@ -173,26 +226,29 @@
         <div class="callout reveal">
             <div class="mark">!</div>
             <div>
-                <h4>The asymmetry</h4>
-                <p>The multiplier $\lambda_t \propto (T-t)$ grows with the <strong>remaining horizon</strong>: an early-token deviation reshapes every later token's conditioning, so its error compounds over the whole suffix. A flat $D_t \le \delta$ ignores this — under-penalizing early deviations and over-restricting late exploration.</p>
+                <h4><span class="en">The asymmetry</span><span class="zh">根源在于不对称性</span></h4>
+                <p>
+                    <span class="en">The multiplier $\lambda_t \propto (T-t)$ grows with the <strong>remaining horizon</strong>: an early-token deviation reshapes every later token's conditioning, so its error compounds over the whole suffix. A flat $D_t \le \delta$ ignores this — under-penalizing early deviations and over-restricting late exploration.</span>
+                    <span class="zh">系数 $\lambda_t \propto (T-t)$ 随<strong>剩余长度</strong>（remaining horizon）线性增长。靠前 token 的偏移会改变其后所有 token 的条件分布，其误差因而沿整段 suffix 持续累积。统一阈值 $D_t \le \delta$ 未能刻画这一结构，对靠前的高影响偏移约束不足，而对靠后的探索约束过度。</span>
+                </p>
             </div>
         </div>
 
         <div class="versus reveal">
             <div class="vcard old">
-                <h4>Uniform Threshold</h4>
+                <h4><span class="en">Uniform Threshold</span><span class="zh">统一阈值</span></h4>
                 <ul>
-                    <li>Same $\delta$ at every position</li>
-                    <li>Loose on early, high-impact tokens</li>
-                    <li>No memory of accumulated drift</li>
+                    <li><span class="en">Same $\delta$ at every position</span><span class="zh">各位置采用相同的 $\delta$</span></li>
+                    <li><span class="en">Loose on early, high-impact tokens</span><span class="zh">对靠前的高影响 token 约束过松</span></li>
+                    <li><span class="en">No memory of accumulated drift</span><span class="zh">不计入已累积的偏移</span></li>
                 </ul>
             </div>
             <div class="vcard new">
-                <h4>CPPO (Ours)</h4>
+                <h4><span class="en">CPPO (Ours)</span><span class="zh">CPPO（本文）</span></h4>
                 <ul>
-                    <li>$w_t$ tightens early tokens</li>
-                    <li>Relaxes shorter-horizon late tokens</li>
-                    <li>$\delta_b$ caps cumulative prefix drift</li>
+                    <li><span class="en">$w_t$ tightens early tokens</span><span class="zh">$w_t$ 收紧靠前的 token</span></li>
+                    <li><span class="en">Relaxes shorter-horizon late tokens</span><span class="zh">放松剩余长度更短的靠后 token</span></li>
+                    <li><span class="en">$\delta_b$ caps cumulative prefix drift</span><span class="zh">$\delta_b$ 约束累积的 prefix 偏移</span></li>
                 </ul>
             </div>
         </div>
@@ -212,8 +268,11 @@
             <article class="entry">
                 <div class="entry-num">01</div>
                 <div class="entry-body">
-                    <h3>Position-Weighted Threshold</h3>
-                    <p>A decreasing linear schedule yields a position-dependent threshold $D_t \le \delta/w_t$ — strict early, relaxed late:</p>
+                    <h3><span class="en">Position-Weighted Threshold</span><span class="zh">位置加权阈值</span></h3>
+                    <p>
+                        <span class="en">A decreasing linear schedule yields a position-dependent threshold $D_t \le \delta/w_t$ — strict early, relaxed late:</span>
+                        <span class="zh">采用线性递减的权重调度，得到与位置相关的阈值 $D_t \le \delta/w_t$，靠前位置更严、靠后位置更宽：</span>
+                    </p>
                     <div class="eq small">
                         $$w_t = 1 - \frac{1-w_{\min}}{T-1}(t-1),\qquad w_t \in [w_{\min}, 1]$$
                     </div>
@@ -222,8 +281,11 @@
             <article class="entry">
                 <div class="entry-num">02</div>
                 <div class="entry-body">
-                    <h3>Cumulative Prefix Budget</h3>
-                    <p>An effective threshold caps the weighted prefix average, tightening as drift accumulates:</p>
+                    <h3><span class="en">Cumulative Prefix Budget</span><span class="zh">累积 prefix 预算</span></h3>
+                    <p>
+                        <span class="en">An effective threshold caps the weighted prefix average, tightening as drift accumulates:</span>
+                        <span class="zh">引入有效阈值，对加权 prefix 均值加以约束，并随偏移累积而逐步收紧：</span>
+                    </p>
                     <div class="eq small">
                         $$w_t D_t \le c_t^{\text{CPPO}} := \min\{\delta,\; \delta + \delta_b W_{t-1} - S_{t-1}\}$$
                     </div>
@@ -232,30 +294,38 @@
             <article class="entry">
                 <div class="entry-num">03</div>
                 <div class="entry-body">
-                    <h3>Token Mask &amp; Surrogate</h3>
-                    <p>The two constraints fold into one feasibility test $I_t$; corrective updates are never blocked, and the mask plugs straight into the PPO/GRPO ratio–advantage objective:</p>
+                    <h3><span class="en">Token Mask &amp; Surrogate</span><span class="zh">Token Mask 与替代目标</span></h3>
+                    <p>
+                        <span class="en">The two constraints fold into one feasibility test $I_t$; corrective updates are never blocked, and the mask plugs straight into the PPO/GRPO ratio–advantage objective:</span>
+                        <span class="zh">两项约束合并为单一可行性判据 $I_t$；纠正性更新从不被屏蔽，该 mask 可直接嵌入 PPO/GRPO 的 ratio–advantage 目标：</span>
+                    </p>
                     <div class="eq small">
                         $$M_t^{\text{CPPO}} = \mathbb{1}\!\left(\hat{A}_t(\rho_t-1)\le 0 \;\vee\; I_t\right),\quad I_t : w_t D_t \le \delta \;\wedge\; S_t \le \delta + \delta_b W_{t-1}$$
                     </div>
                     <div class="eq small">
                         $$\mathcal{L}^{\text{CPPO}}_{\mu}(\pi) = \mathbb{E}_{\mu}\!\left[\sum_{t=1}^{T} M_t^{\text{CPPO}}\,\rho_t\,\hat{A}_t\right]$$
                     </div>
-                    <p class="detail">Reuses the same per-token divergence as DPPO — <strong>no extra loss terms, no new estimator</strong>.</p>
+                    <p class="detail">
+                        <span class="en">Reuses the same per-token divergence as DPPO — <strong>no extra loss terms, no new estimator</strong>.</span>
+                        <span class="zh">沿用与 DPPO 相同的逐 token 散度，<strong>不增加 loss 项，亦不引入新的估计器</strong>。</span>
+                    </p>
                 </div>
             </article>
         </div>
 
         <figure class="plate result-fig reveal" style="margin-top:2.6rem;">
             <img src="assets/figs/fig3_prefix_constraint.png" alt="Cumulative prefix constraint on a token window.">
-            <figcaption class="figcap">
-                <span class="lab">Figure 5 —</span> The prefix constraint on a token window. <b>Blue:</b> token-level threshold $\delta$ active. <b>Orange:</b> accumulated drift pushes the prefix average up, so the effective threshold drops below $\delta$ — the orange bar passes the token test yet is masked by the prefix budget.
+            <figcaption class="figcap"><span class="lab">Figure 5 —</span>
+                <span class="en"> The prefix constraint on a token window. <b>Blue:</b> token-level threshold $\delta$ active. <b>Orange:</b> accumulated drift pushes the prefix average up, so the effective threshold drops below $\delta$ — the orange bar passes the token test yet is masked by the prefix budget.</span>
+                <span class="zh"> token 窗口上的 prefix 约束。<b>蓝色：</b>token 级阈值 $\delta$ 生效。<b>橙色：</b>累积偏移抬高 prefix 均值，使有效阈值降至 $\delta$ 以下；图中橙色柱虽满足 token 级判据，却被 prefix 预算所屏蔽。</span>
             </figcaption>
         </figure>
 
         <figure class="plate result-fig reveal" style="margin-top:2rem;">
             <img src="assets/figs/fig2_position_deviation.png" alt="Position-conditioned policy deviation and the induced threshold.">
-            <figcaption class="figcap">
-                <span class="lab">Figure 6 —</span> Policy deviation $|\pi_\theta-\mu|$ from Qwen3-30B-A3B rollouts grows with token position (left, middle); the induced threshold $\delta/w_t$ is tighter early and relaxed late (right).
+            <figcaption class="figcap"><span class="lab">Figure 6 —</span>
+                <span class="en"> Policy deviation $|\pi_\theta-\mu|$ from Qwen3-30B-A3B rollouts grows with token position (left, middle); the induced threshold $\delta/w_t$ is tighter early and relaxed late (right).</span>
+                <span class="zh"> 来自 Qwen3-30B-A3B rollout 的策略偏移 $|\pi_\theta-\mu|$ 随 token 位置递增（左、中）；由此导出的阈值 $\delta/w_t$ 靠前更紧、靠后更松（右）。</span>
             </figcaption>
         </figure>
     </div>
@@ -271,23 +341,23 @@
         <div class="stats reveal">
             <div class="stat">
                 <div class="n">4&#8260;4</div>
-                <h3>Best Everywhere</h3>
-                <p>Top score on all four Qwen3 models — dense &amp; MoE, Base &amp; post-trained.</p>
+                <h3><span class="en">Best Everywhere</span><span class="zh">全设置最优</span></h3>
+                <p><span class="en">Top score on all four Qwen3 models — dense &amp; MoE, Base &amp; post-trained.</span><span class="zh">在四个 Qwen3 模型上均取得最高分，涵盖 dense 与 MoE、Base 与 post-trained。</span></p>
             </div>
             <div class="stat">
                 <div class="n">+5.56</div>
-                <h3>Long Horizon</h3>
-                <p>Biggest margin on 30B-A3B-Base (16k), where early-token propagation dominates.</p>
+                <h3><span class="en">Long Horizon</span><span class="zh">长序列收益</span></h3>
+                <p><span class="en">Biggest margin on 30B-A3B-Base (16k), where early-token propagation dominates.</span><span class="zh">在 30B-A3B-Base（16k）上优势最大，此设置下靠前 token 的传播效应占主导。</span></p>
             </div>
             <div class="stat">
                 <div class="n">Stable</div>
-                <h3>No Collapse</h3>
-                <p>Trains stably where CISPO collapses and TRM-Max falls to 20.27.</p>
+                <h3><span class="en">No Collapse</span><span class="zh">训练稳定</span></h3>
+                <p><span class="en">Trains stably where CISPO collapses and TRM-Max falls to 20.27.</span><span class="zh">在 CISPO 发生训练崩溃、TRM-Max 退化至 20.27 的设置下仍能稳定收敛。</span></p>
             </div>
             <div class="stat">
                 <div class="n">Drop-in</div>
-                <h3>No New Loss</h3>
-                <p>A token mask on PPO/GRPO with DPPO's divergence — provably tighter bound.</p>
+                <h3><span class="en">No New Loss</span><span class="zh">无新增损失</span></h3>
+                <p><span class="en">A token mask on PPO/GRPO with DPPO's divergence — provably tighter bound.</span><span class="zh">仅在 PPO/GRPO 之上增加一层 token mask，并沿用 DPPO 的散度，即可给出可证明更紧的 policy-improvement bound。</span></p>
             </div>
         </div>
     </div>
@@ -295,7 +365,10 @@
 
 <footer class="colophon">
     <div class="wrap">
-        <p>CPPO &nbsp;·&nbsp; <span class="accent">Tencent Hunyuan</span> &nbsp;·&nbsp; 2026<br>Set in Fraunces, Spectral &amp; IBM Plex Mono.</p>
+        <p>
+            <span class="en">CPPO &nbsp;·&nbsp; <span class="accent">Tencent Hunyuan</span> &nbsp;·&nbsp; 2026<br>Set in Fraunces, Spectral &amp; IBM Plex Mono.</span>
+            <span class="zh">CPPO &nbsp;·&nbsp; <span class="accent">腾讯混元</span> &nbsp;·&nbsp; 2026<br>字体：Fraunces、Spectral 与 IBM Plex Mono。</span>
+        </p>
     </div>
 </footer>
 

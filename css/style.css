@@ -6,26 +6,77 @@
    Original design — not derived from any template.
    ============================================================ */
 
+/* ---------- Bilingual toggle ---------- */
+:root { --cjk: "Noto Serif SC", "Songti SC", "Source Han Serif SC", serif; }
+.zh { display: none; }
+html[data-lang="zh"] .en { display: none; }
+html[data-lang="zh"] .zh { display: inline; }
+/* CJK font applied ONLY to Chinese spans, so English-only elements
+   (title, subtitle, buttons, section headings, figure labels) never shift */
+.zh { font-family: var(--cjk); }
+/* looser leading scoped to prose blocks only — never the masthead, so
+   toggling language cannot change the masthead's height (no vertical jitter) */
+html[data-lang="zh"] .tldr-lead,
+html[data-lang="zh"] .tldr-points li,
+html[data-lang="zh"] .callout p,
+html[data-lang="zh"] .entry-body p,
+html[data-lang="zh"] .tab-desc,
+html[data-lang="zh"] .bignum .t,
+html[data-lang="zh"] .figcap,
+html[data-lang="zh"] .vcard li,
+html[data-lang="zh"] .stat p { line-height: 1.85; }
+
+/* language toggle control */
+.langtoggle {
+    display: inline-flex;
+    margin: clamp(1.4rem, 4vw, 2rem) auto 0;
+    border: 1.5px solid var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--paper);
+}
+.langtoggle { display: flex; justify-content: center; width: fit-content; margin-left: auto; margin-right: auto; }
+.lang-btn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: 0.06em;
+    padding: 0.5em 1.1em;
+    border: none;
+    background: transparent;
+    color: var(--ink-mute);
+    cursor: pointer;
+    transition: background .18s ease, color .18s ease;
+}
+.lang-btn + .lang-btn { border-left: 1.5px solid var(--line); }
+.lang-btn:hover { color: var(--ink); }
+.lang-btn.active { background: var(--accent); color: #fff; }
+/* the 简体中文 label always uses the CJK face (independent of current language)
+   so the toggle's height never changes when switching */
+.lang-btn[data-lang="zh"] { font-family: var(--cjk); }
+
+
 /* ---------- Tokens ---------- */
 :root {
-    --paper:        #f4efe3;
-    --paper-panel:  #ece4d4;
-    --paper-deep:   #e4dbc7;
-    --ink:          #191510;
-    --ink-soft:     #433c32;
-    --ink-mute:     #8d8474;
-    --accent:       #bd3b1f;
-    --accent-deep:  #94250f;
-    --accent-tint:  rgba(189, 59, 31, 0.08);
+    --paper:        #eef1f8;
+    --paper-panel:  #e4e9f3;
+    --paper-deep:   #d9e0ee;
+    --ink:          #141821;
+    --ink-soft:     #3a4254;
+    --ink-mute:     #79839a;
+    --accent:       #0a54d6;
+    --accent-deep:  #0540ac;
+    --accent-tint:  rgba(10, 84, 214, 0.09);
     --pine:         #2c5d52;
-    --line:         rgba(25, 21, 16, 0.16);
-    --line-soft:    rgba(25, 21, 16, 0.08);
+    --line:         rgba(20, 30, 55, 0.16);
+    --line-soft:    rgba(20, 30, 55, 0.08);
 
     --display: "Fraunces", Georgia, serif;
     --serif:   "Spectral", Georgia, serif;
     --mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
 
-    --shadow-plate: 0 1px 0 rgba(25,21,16,.03), 0 26px 50px -34px rgba(25,21,16,.55);
+    --shadow-plate: 0 1px 0 rgba(20,30,55,.03), 0 26px 50px -34px rgba(20,30,55,.55);
     --maxw: 1080px;
     --narrow: 720px;
     --pad: clamp(1.25rem, 5vw, 3rem);
@@ -71,7 +122,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .narrow { max-width: var(--narrow); }
 
 .section { padding: clamp(3.5rem, 8vw, 6rem) 0; }
-.section.tinted { background: linear-gradient(180deg, rgba(228,219,199,.5), rgba(228,219,199,.18)); border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+.section.tinted { background: linear-gradient(180deg, rgba(10,84,214,.07), rgba(10,84,214,.02)); border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
 
 /* mono kicker / labels */
 .kicker {
@@ -155,19 +206,24 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     color: var(--ink-mute);
 }
 .masthead-top .rule { flex: 1; height: 1px; background: var(--line); min-width: 30px; }
+.masthead-top .brand { display: inline-flex; align-items: center; }
+.masthead-top .brand img {
+    height: 1.55rem;
+    width: auto;
+    display: block;
+}
 
 .wordmark {
     font-family: var(--display);
     font-optical-sizing: auto;
     font-weight: 600;
-    font-size: clamp(4.5rem, 17vw, 11rem);
-    line-height: 0.86;
-    letter-spacing: -0.04em;
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
     text-align: center;
     color: var(--ink);
     font-variation-settings: "SOFT" 0, "WONK" 1;
 }
-.wordmark .dot { color: var(--accent); }
 
 .lede {
     font-family: var(--display);
@@ -178,7 +234,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     line-height: 1.25;
     text-align: center;
     color: var(--ink-soft);
-    max-width: 22ch;
+    max-width: 40ch;
     margin: 1.1rem auto 0;
     text-wrap: balance;
 }
@@ -209,10 +265,13 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
     margin-top: 0.4rem;
     font-family: var(--mono);
     font-size: 0.68rem;
+    line-height: 1.4;
     letter-spacing: 0.04em;
     color: var(--ink-mute);
     text-align: center;
+    white-space: nowrap;
 }
+.notes .zh { font-family: var(--mono); }
 .notes sup { color: var(--accent); }
 
 /* action links */
@@ -250,6 +309,11 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 .act.dim:hover { transform: none; }
 .act .soon { font-size: 0.66em; opacity: 0.75; }
+.act .ico { flex-shrink: 0; display: block; }
+.act.primary .ico path { fill: var(--paper); }
+.act.primary .ico text { fill: var(--ink); }
+.act.primary:hover .ico path { fill: var(--paper); }
+.act.primary:hover .ico text { fill: var(--accent); }
 
 /* ============================================================
    TOKEN-WEIGHT STRIP  (signature motif: w_t decays early→late)
@@ -404,7 +468,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .panel.problem { border-color: var(--line); }
 .panel.problem .tag { color: var(--ink-mute); }
 .panel.problem .tag::before { content: "×"; font-weight: 700; font-size: 1.1em; color: var(--ink); }
-.panel.solution { border-color: rgba(189,59,31,.35); background: var(--accent-tint); }
+.panel.solution { border-color: rgba(10,84,214,.35); background: var(--accent-tint); }
 .panel.solution .tag { color: var(--accent-deep); }
 .panel.solution .tag::before { content: "→"; font-weight: 700; }
 .panel p { font-size: 0.95rem; line-height: 1.6; color: var(--ink-soft); }
@@ -448,7 +512,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .vcard h4 { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
 .vcard.old { background: var(--paper); }
 .vcard.old h4 { color: var(--ink-mute); }
-.vcard.new { background: var(--accent-tint); border-color: rgba(189,59,31,.35); }
+.vcard.new { background: var(--accent-tint); border-color: rgba(10,84,214,.35); }
 .vcard.new h4 { color: var(--accent-deep); }
 .vcard ul { list-style: none; }
 .vcard li { font-size: 0.94rem; line-height: 1.5; padding: 0.35rem 0 0.35rem 1.4rem; position: relative; color: var(--ink-soft); border-bottom: 1px solid var(--line-soft); }
@@ -542,9 +606,9 @@ table.data thead th {
     background: var(--paper-panel);
 }
 table.data th:first-child, table.data td:first-child { text-align: left; font-family: var(--mono); font-size: 0.92rem; }
-table.data tbody tr:hover { background: rgba(25,21,16,.025); }
+table.data tbody tr:hover { background: rgba(20,30,55,.025); }
 table.data tr.ours { background: var(--accent-tint); box-shadow: inset 3px 0 0 var(--accent); }
-table.data tr.ours:hover { background: rgba(189,59,31,.12); }
+table.data tr.ours:hover { background: rgba(10,84,214,.12); }
 table.data tr.ours td { color: var(--ink); font-weight: 600; }
 table.data tr.ours td:first-child { color: var(--accent-deep); }
 .under { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--ink-mute); }
